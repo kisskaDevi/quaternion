@@ -1,6 +1,17 @@
 #include <iostream>
+#include <vector>
 #include "iomanip"
+
 #include "dualQuaternion.h"
+
+struct indices{
+    int32_t index0;
+    int32_t index1;
+    int32_t index2;
+};
+
+indices checkVector(const std::vector<glm::vec3>& x);
+dualQuaternion<float> getTranformation(const std::vector<glm::vec3>& x, const std::vector<glm::vec3>& x_);
 
 int main()
 {
@@ -83,5 +94,129 @@ int main()
     std::cout<<"inverse transformation from SE3 to quat1= "<<std::endl;
     std::cout<<P3<<std::endl;
 
+
+    std::cout<<std::endl;
+    std::cout<<"=========================================="<<std::endl;
+
+    std::vector<glm::vec3> points(3);
+    std::vector<glm::vec3> points_(3);
+
+    points[0] = {1.0f, 2.0f, 3.0f};
+    points[1] = {4.0f, 3.0f, 5.0f};
+    points[2] = {1.0f,-2.0f,-3.0f};
+
+    dualQuaternion<float> Q = convert(convert(glm::radians(45.0f),glm::normalize(glm::vec3(1.0f,1.0f,1.0f))),{0.0f,2.0f,-2.0f,1.0f});
+
+    for(size_t i=0;i<points.size();i++)
+    {
+        dualQuaternion<float> pos({1.0f,0.0f,0.0f,0.0f},{0.0f,0.5f*points[i].x,0.5f*points[i].y,0.5f*points[i].z});
+        dualQuaternion<float> pos_ = Q*pos*conjugate(Q);
+        points_[i] = pos_.translation().vector();
+    }
+
+    std::cout<<"originally given transformation = "<<Q<<std::endl;
+    std::cout<<"reconstructed transformation    = "<<getTranformation(points,points_)<<std::endl;
+
     return 0;
+}
+
+indices checkVector(const std::vector<glm::vec3>& x)
+{
+    indices id = {-1,-1,-1};
+    if(x.size()>0){
+        id.index0 = 0;
+
+        uint32_t i = id.index0;
+        while(i<x.size() && x[id.index0] == x[i]){
+            i++;
+        }
+
+        if(i<x.size()){
+            id.index1 = i;
+
+            while(i<x.size() &&
+                  (x[i].x-x[0].x)/(x[id.index1].x-x[0].x) == (x[i].y-x[0].y)/(x[id.index1].y-x[0].y) &&
+                  (x[i].y-x[0].y)/(x[id.index1].y-x[0].y) == (x[i].z-x[0].z)/(x[id.index1].z-x[0].z)
+            ){
+                i++;
+            }
+
+            if(i<x.size()){
+                id.index2 = i;
+            }
+        }
+    }
+
+    return id;
+}
+
+dualQuaternion<float> getTranformation(const std::vector<glm::vec3>& x, const std::vector<glm::vec3>& x_)
+{
+    dualQuaternion<float> Q;
+
+    indices ind = checkVector(x);
+
+    if(ind.index0!=-1&&ind.index1!=-1&&ind.index2!=-1)
+    {
+
+        glm::vec3 x1 = x[ind.index0];        glm::vec3 x1_ = x_[ind.index0];
+        glm::vec3 x2 = x[ind.index1];        glm::vec3 x2_ = x_[ind.index1];
+        glm::vec3 x3 = x[ind.index2];        glm::vec3 x3_ = x_[ind.index2];
+
+        glm::vec3 t = x1 - x1_;
+
+        glm::vec3 u = x2 - x1;      glm::vec3 u_ = x2_ - x1_;
+
+        float cosTheta = glm::dot(u,u_)/(glm::length(u)*glm::length(u_));
+        float theta = glm::acos(cosTheta);
+
+        x1_ += t;
+        x2_ += t;
+        x3_ += t;
+
+        float det = glm::determinant(glm::mat3x3( x1.x, x1.y, x1.z, x2.x, x2.y, x2.z, x2_.x, x2_.y, x2_.z));
+        float a   = glm::determinant(glm::mat3x3(-1.0f, x1.y, x1.z,-1.0f, x2.y, x2.z, -1.0f, x2_.y, x2_.z));
+        float b   = glm::determinant(glm::mat3x3( x1.x,-1.0f, x1.z, x2.x,-1.0f, x2.z, x2_.x, -1.0f, x2_.z));
+        float c   = glm::determinant(glm::mat3x3( x1.x, x1.y,-1.0f, x2.x, x2.y,-1.0f, x2_.x, x2_.y, -1.0f));
+
+        a /= det;
+        b /= det;
+        c /= det;
+
+        float invNorma = 1.0f/glm::sqrt(a*a+b*b+c*c);
+        glm::vec3 n = {invNorma*a,invNorma*b,invNorma*c};
+
+                   x1_ -= x1;
+        x2 -= x1;  x2_ -= x1;
+        x3 -= x1;  x3_ -= x1;
+        x1 = {0.0f,0.0f,0.0f};
+
+        quaternion<float> q1 = convert(theta,n);
+
+        x1_ = quaternion<float>( q1 * quaternion<float>(0.0f,x1_) * conjugate(q1) ).vector();
+        x2_ = quaternion<float>( q1 * quaternion<float>(0.0f,x2_) * conjugate(q1) ).vector();
+        x3_ = quaternion<float>( q1 * quaternion<float>(0.0f,x3_) * conjugate(q1) ).vector();
+
+                  u = x2;                u_ = x2_;
+        glm::vec3 v = x3;      glm::vec3 v_ = x3_;
+
+        float cosPsi = glm::dot(u,v)/glm::length(u)/glm::length(v);
+        glm::vec3 l = cosPsi * glm::length(v) * glm::normalize(u);
+        glm::vec3 m  = normalize(v - l);
+        glm::vec3 m_ = normalize(v_ - l);
+
+        float cosPhi = glm::dot(m,m_);
+        float phi = -glm::acos(cosPhi);
+
+        quaternion<float> q2 = convert(phi,normalize(u));
+
+        quaternion<float> q = q1.invert()*q2.invert();
+
+        glm::vec3 xrot = quaternion<float>( q * quaternion<float>(0.0f,x[0]) * conjugate(q) ).vector();
+        glm::vec3 tr = (x_[0] - xrot)/2.0f;
+
+        Q = convert(q,{0.0f,tr});
+    }
+
+    return Q;
 }
