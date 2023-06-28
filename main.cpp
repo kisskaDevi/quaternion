@@ -72,7 +72,7 @@ int main()
     dualQuaternion<Type> P1 = convert(
         convert(glm::radians(Type(90)),glm::vec<3,Type,glm::defaultp>(Type(0),Type(0),Type(1))),
         quaternion<Type>(Type(0),Type(5),Type(0),Type(0)));
-    dualQuaternion<Type> P2= dualQuaternion<Type>(
+    dualQuaternion<Type> P2= convert(
         quaternion<Type>(Type(1),Type(0),Type(0),Type(0)),
         quaternion<Type>(Type(0),pos.x,pos.y,pos.z));
 

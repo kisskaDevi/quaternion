@@ -1,7 +1,7 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
-#include"glm/glm.hpp"
+#include "glm/glm.hpp"
 #include <iostream>
 
 template<typename type>
@@ -45,7 +45,7 @@ public:
     template<typename T> friend std::ostream& operator<< (std::ostream & out, const quaternion<T>& quat);
 
     template<typename T> friend quaternion<T> convert(const glm::mat<3,3,T,glm::defaultp>& O3);
-    template<typename T> friend glm::mat3x3 convert(const quaternion<T>& quat);
+    template<typename T> friend glm::mat<3,3,T,glm::defaultp> convert(const quaternion<T>& quat);
 
     template<typename T> friend quaternion<T> convert(const T& yaw, const T& pitch, const T& roll);
     template<typename T> friend quaternion<T> convert(const T& angle, const glm::vec<3,type,glm::defaultp>& axis);
@@ -261,9 +261,9 @@ quaternion<T> convert(const glm::mat<3,3,T,glm::defaultp>& O3)
 }
 
 template<typename T>
-glm::mat3x3 convert(const quaternion<T>& quat)
+glm::mat<3,3,T,glm::defaultp> convert(const quaternion<T>& quat)
 {
-    glm::mat3x3 R;
+    glm::mat<3,3,T,glm::defaultp> R;
 
     R[0][0] = T(1) - T(2)*(quat.y*quat.y + quat.z*quat.z);      R[0][1] = T(2)*(quat.x*quat.y - quat.z*quat.s);         R[0][2] = T(2)*(quat.x*quat.z + quat.y*quat.s);
     R[1][0] = T(2)*(quat.x*quat.y + quat.z*quat.s);             R[1][1] = T(1) - T(2)*(quat.x*quat.x + quat.z*quat.z);  R[1][2] = T(2)*(quat.y*quat.z - quat.x*quat.s);

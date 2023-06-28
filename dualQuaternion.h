@@ -240,10 +240,10 @@ glm::mat<4,4,T,glm::defaultp> convert(const dualQuaternion<T>& quat)
 
     glm::mat<4,4,T,glm::defaultp> SE3;
 
-    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = translation.vector().x;
-    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = translation.vector().y;
-    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = translation.vector().z;
-    SE3[3][0] = T(0);       SE3[3][1] = T(0);       SE3[3][2] = T(0);       SE3[3][3] = T(1);
+    SE3[0][0] = R[0][0];    SE3[0][1] = R[0][1];    SE3[0][2] = R[0][2];    SE3[0][3] = T(0);
+    SE3[1][0] = R[1][0];    SE3[1][1] = R[1][1];    SE3[1][2] = R[1][2];    SE3[1][3] = T(0);
+    SE3[2][0] = R[2][0];    SE3[2][1] = R[2][1];    SE3[2][2] = R[2][2];    SE3[2][3] = T(0);
+    SE3[3][0] = translation.vector().x;       SE3[3][1] = translation.vector().y;       SE3[3][2] = translation.vector().z;       SE3[3][3] = T(1);
 
     return SE3;
 }
